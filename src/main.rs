@@ -1,4 +1,4 @@
-use std::io::{self, Error, Write};
+use std::io::{stdin, stdout, self, Error, Read, Write};
 use std::collections::HashMap;
 
 enum MenuOption {
@@ -24,7 +24,7 @@ impl Bill {
 
     fn view(&self) {
         println!("Name: {}", self.name);
-        println!("Amount Owed: {}", self.amount_owed);
+        println!("Amount Owed: {}\n", self.amount_owed);
     }
 
     fn edit(&mut self, name: Option<String>, amount_owed: Option<i32>) {
@@ -60,6 +60,17 @@ fn print_menu() {
 fn input_print(input: &str) {
     print!("{}", input);
     io::stdout().flush().unwrap();
+}
+
+fn screen_clear() {
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+}
+
+fn pause() {
+    let mut stdout = stdout();
+    stdout.write(b"\nPress Enter to go back to the Main Menu.").unwrap();
+    stdout.flush().unwrap();
+    stdin().read(&mut [0]).unwrap();
 }
 
 fn choose_menu_option(input: &str) -> Option<MenuOption> {
@@ -118,12 +129,13 @@ fn add_bill(bills: &mut HashMap<i32, Bill>) -> Result<(), Error> {
 }
 
 fn list_bills(bills: &mut HashMap<i32, Bill>) -> Result<(), String> {
+    println!("Bills:");
     if bills.is_empty() {
         return Err("There are no available bills".to_owned());
     }
 
     for (key, value) in bills.iter() {
-        println!("\nid: {}", key);
+        println!("Bill id: {}", key);
         value.view();
     }
     Ok(())
@@ -212,9 +224,6 @@ fn edit_bill(bills: &mut HashMap<i32, Bill>) -> Result<(), Error>{
             let amount: i32 = amount.trim().parse().unwrap();
             bills.get_mut(&id).unwrap().edit(Some(name), Some(amount));
         }
-
-    
-
         _ => println!("There is no such option"),
     }
     
@@ -230,6 +239,7 @@ fn main() {
     let mut uinput: String;
 
     loop {
+        //clearing screen
         print_menu();
         match user_input() {
             Ok(input) => uinput = input,
@@ -242,6 +252,7 @@ fn main() {
         use MenuOption::*;
         match choose_menu_option(&uinput) {
             Some(Add) => {
+                screen_clear();
                 match add_bill(&mut bills) {
                     Err(e) => println!("Error: {:?}", e),
                     _ => ()
@@ -249,19 +260,23 @@ fn main() {
             }
 
             Some(View) => {
+                screen_clear();
                 match list_bills(&mut bills) {
                    Err(e) => println!("{:?}", e),
                    _ => (),
                 }
+                pause();
 
             }
             Some(Remove) => {
+                screen_clear();
                 match remove_bill(&mut bills) {
                    Err(e) => println!("Error: {:?}", e),
                    _ => (),
                 }
             }
             Some(Edit) => {
+                screen_clear();
                 match edit_bill(&mut bills) {
                     Err(e) => println!("Error: {:?}", e),
                     _ => (),
@@ -274,6 +289,7 @@ fn main() {
 
             None => println!("There is no such option."),
         }
+        screen_clear();
     }
 }
 
